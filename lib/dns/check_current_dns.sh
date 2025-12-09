@@ -1,28 +1,51 @@
 #!/bin/bash
 
-# Script: check_current_dns.sh
-# Mô tả: Kiểm tra DNS đang được cấu hình trên các interface mạng macOS
+REQUIRED_PRIMARY="8.8.8.8"
+REQUIRED_SECONDARY="8.8.4.4"
 
-echo "🔍 Kiểm tra DNS hiện tại trên hệ thống..."
+echo "🔍 Bắt đầu kiểm tra cấu hình DNS trên hệ thống..."
+echo
 
-# Lấy danh sách interface mạng
-interfaces=$(networksetup -listallnetworkservices | tail -n +2)
+total_interfaces=0
+compliant_interfaces=0
+non_compliant_interfaces=0
 
-for interface in $interfaces; do
+while IFS= read -r interface; do
+    # Bỏ qua interface Thunderbolt
+    if [[ "$interface" == *"Thunderbolt"* ]]; then
+        echo "ℹ️ Bỏ qua interface: $interface (không cần cấu hình DNS)"
+        continue
+    fi
+
+    ((total_interfaces++))
+
     echo "----------------------------------------"
     echo "🌐 Interface: $interface"
 
-    # Lấy DNS đang cấu hình
-    dns=$(networksetup -getdnsservers "$interface" 2>/dev/null)
+    dns_output=$(networksetup -getdnsservers "$interface" 2>&1)
 
-    if [[ "$dns" == "There aren't any DNS Servers set on $interface" ]]; then
-        echo "❌ Chưa cấu hình DNS (sử dụng mặc định từ router)"
-    elif [[ "$dns" == "any DNS Servers"* ]]; then
-        echo "⚠️ Không thể lấy thông tin DNS từ $interface"
+    if [[ "$dns_output" == *"There aren't any DNS Servers set on"* ]]; then
+        echo "⚠️ Chưa cấu hình DNS – đang dùng DNS của nhà mạng (không đạt yêu cầu)"
+        ((non_compliant_interfaces++))
+
+    elif [[ "$dns_output" == "$REQUIRED_PRIMARY"$'\n'"$REQUIRED_SECONDARY" ]]; then
+        echo "✅ DNS đã cấu hình đúng: $REQUIRED_PRIMARY và $REQUIRED_SECONDARY"
+        ((compliant_interfaces++))
+
     else
-        echo "✅ DNS đang dùng:"
-        echo "$dns"
+        echo "❌ DNS không đúng chuẩn:"
+        echo "$dns_output"
+        ((non_compliant_interfaces++))
     fi
-done
 
-echo "✅ Hoàn tất kiểm tra."
+done < <(networksetup -listallnetworkservices | tail -n +2 | grep -v "^\*")
+
+echo
+echo "========================================"
+echo "📋 BÁO CÁO TỔNG KẾT CẤU HÌNH DNS"
+echo "Tổng số interface mạng:       $total_interfaces"
+echo "✅ Đã cấu hình đúng DNS:       $compliant_interfaces"
+echo "❌ Chưa cấu hình hoặc sai DNS: $non_compliant_interfaces"
+echo "========================================"
+
+exit $non_compliant_interfaces
