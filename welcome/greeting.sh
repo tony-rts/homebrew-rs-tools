@@ -57,25 +57,36 @@ print_centered_line() {
     local text="$1"
     local plain_text
     plain_text=$(strip_ansi "$text")
+
     local text_len=${#plain_text}
-    local padding=$(( (BOX_WIDTH - 2 - text_len) / 2 ))
-    local right_padding=$(( BOX_WIDTH - 2 - text_len - padding ))
-    
-    printf "${FG_YELLOW}${SIDE}${RESET}"
+    local side_len=${#SIDE}
+    local inner_width=$(( BOX_WIDTH - 2*side_len ))
+
+    if (( text_len > inner_width )); then
+        plain_text=${plain_text:0:inner_width}
+        text="$plain_text"
+        text_len=${#plain_text}
+    fi
+
+    local padding=$(( (inner_width - text_len) / 2 ))
+    local right_padding=$(( inner_width - text_len - padding ))
+
+    printf "%b" "${FG_YELLOW}${SIDE}${RESET}"  # viền trái
     printf '%*s' "$padding" ''
-    printf "${text}"
+    printf "%b" "$text"                        # in text, interpret \e
     printf '%*s' "$right_padding" ''
-    printf "${FG_YELLOW}${SIDE}${RESET}\n"
+    printf "%b\n" "${FG_YELLOW}${SIDE}${RESET}" # viền phải
 }
+
 
 # Print the welcome banner
 print_banner() {
     echo ""
     print_border "top"
     print_empty_line
-    print_centered_line "${BOLD}${FG_MAGENTA}${FG_CYAN}HESMAN${RESET}"
+    print_centered_line $'\e[1m\e[95m\e[96mRULE THE SEA\e[0m'
     print_empty_line
-    print_centered_line "${DIM}${FG_MAGENTA}Security service from RULE THE SEA${RESET}"
+    print_centered_line $'\e[2m\e[95mInternal security tool \e[0m'
     print_empty_line
     print_border "bottom"
     echo ""

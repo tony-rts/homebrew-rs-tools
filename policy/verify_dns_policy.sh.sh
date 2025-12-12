@@ -1,13 +1,13 @@
 #!/bin/bash
 
 echo "🔐 [RS Policy] Từ tháng 12.2025, tất cả thiết bị của công ty RS bắt buộc sử dụng DNS của Google (8.8.8.8 và 8.8.4.4)."
-echo "🧪 Kiểm tra cấu hình DNS hiện tại..."
 
 # Bước 1: Kiểm tra trạng thái hiện tại
 bash ./lib/dns/check_current_dns.sh
 status=$?
 
 # Bước 2: Nếu chưa đạt chuẩn, tiến hành sửa
+RESULT="FAIL"
 if [[ $status -gt 0 ]]; then
   echo
   echo "⚠️ Có $status interface chưa cấu hình đúng DNS."
@@ -24,14 +24,25 @@ if [[ $status -gt 0 ]]; then
   echo
   if [[ $recheck_status -eq 0 ]]; then
     echo "✅ Cảm ơn bạn đã tuân thủ chính sách DNS của RS!"
-    echo "📤 Báo cáo trạng thái đã được gửi về server."
+    RESULT="SUCCESS"
   else
     echo "❌ Một số interface vẫn chưa đạt yêu cầu sau khi cấu hình."
     echo "📞 Vui lòng liên hệ bộ phận kỹ thuật để được hỗ trợ."
+    RESULT="FAIL"
   fi
 
 else
-  echo
   echo "✅ Thiết bị của bạn đã tuân thủ chính sách DNS."
-  echo "📤 Báo cáo trạng thái đã được gửi về server."
+  RESULT="SUCCESS"
 fi
+
+# Lấy thông tin email người dùng từ file cấu hình
+EMAIL=$(bash ./profile/email.sh)
+
+# Lấy thông tin thiết bị
+bash ./profile/device.sh > /dev/null 2>&1
+source "$HOME/.rts/device"
+
+# Gửi báo cáo với thông tin thực tế
+bash ./lib/dns/report.sh "$EMAIL" "$SERIAL_NUMBER" "$MAC_ADDRESS" "$HARDWARE_UUID" "$RESULT"
+echo "📤 Báo cáo trạng thái đã được gửi về server."

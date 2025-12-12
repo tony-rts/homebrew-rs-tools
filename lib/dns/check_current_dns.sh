@@ -3,7 +3,7 @@
 REQUIRED_PRIMARY="8.8.8.8"
 REQUIRED_SECONDARY="8.8.4.4"
 
-echo "🔍 Bắt đầu kiểm tra cấu hình DNS trên hệ thống..."
+echo "🔍 Bắt đầu kiểm tra cấu hình DNS hiện tại..."
 echo
 
 total_interfaces=0
