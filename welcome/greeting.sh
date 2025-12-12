@@ -86,7 +86,7 @@ print_banner() {
     print_empty_line
     print_centered_line $'\e[1m\e[95m\e[96mRULE THE SEA\e[0m'
     print_empty_line
-    print_centered_line $'\e[2m\e[95mInternal security tool \e[0m'
+    print_centered_line $'\e[2m\e[92mInternal security tool \e[0m'
     print_empty_line
     print_border "bottom"
     echo ""
